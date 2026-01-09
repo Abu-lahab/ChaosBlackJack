@@ -3,15 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- GitHub Pages base path -->
+    <base href="/ChaosBlackJack/">
+
     <title>Online Blackjack - Multiplayer</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <!-- Tailwind CSS (GitHub Pages safe) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
-        
-        * {
-            font-family: 'Poppins', sans-serif;
-        }
-        
+        * { font-family: 'Poppins', sans-serif; }
+
         .card {
             width: 60px;
             height: 84px;
@@ -26,1149 +32,114 @@
             position: relative;
             transition: transform 0.3s;
         }
-        
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        
+        .card:hover { transform: translateY(-5px); }
         .card.red { color: #dc2626; }
         .card.black { color: #1f2937; }
-        
+
         .card-back {
             background: linear-gradient(135deg, #1e40af 25%, #3b82f6 25%, #3b82f6 50%, #1e40af 50%, #1e40af 75%, #3b82f6 75%);
             background-size: 10px 10px;
             border: 3px solid #1e3a8a;
         }
-        
-        .card-stack {
-            display: flex;
-            margin-left: -40px;
-        }
-        
-        .card-stack:first-child {
-            margin-left: 0;
-        }
-        
+
         .table-felt {
             background: linear-gradient(145deg, #15803d 0%, #166534 50%, #14532d 100%);
             border: 12px solid #78350f;
             box-shadow: inset 0 0 50px rgba(0,0,0,0.3), 0 10px 30px rgba(0,0,0,0.5);
         }
-        
-        .player-seat {
-            transition: all 0.3s ease;
-        }
-        
+
         .player-seat.active {
             box-shadow: 0 0 20px #fbbf24, 0 0 40px #f59e0b;
         }
-        
-        .player-seat.bust {
-            opacity: 0.6;
-        }
-        
-        .chip {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 10px;
-            border: 3px dashed rgba(255,255,255,0.5);
-            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
-        }
-        
+
         .btn-game {
             background: linear-gradient(145deg, #fbbf24, #d97706);
             transition: all 0.2s;
         }
-        
-        .btn-game:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 15px rgba(251, 191, 36, 0.4);
-        }
-        
-        .btn-game:disabled {
-            background: linear-gradient(145deg, #6b7280, #4b5563);
-            cursor: not-allowed;
-            transform: none;
-        }
-        
+        .btn-game:hover { transform: scale(1.05); }
+
         .pulse-animation {
             animation: pulse 2s infinite;
         }
-        
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .slide-in {
-            animation: slideIn 0.5s ease-out;
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        .deal-animation {
-            animation: dealCard 0.3s ease-out;
-        }
-        
-        @keyframes dealCard {
-            from { transform: translateX(-100px) translateY(-100px) rotate(-180deg); opacity: 0; }
-            to { transform: translateX(0) translateY(0) rotate(0); opacity: 1; }
-        }
-
-        .modal-overlay {
-            backdrop-filter: blur(4px);
-        }
-
-        .copy-btn:active {
-            transform: scale(0.95);
+            0%,100%{opacity:1}50%{opacity:.5}
         }
     </style>
 </head>
+
 <body class="bg-gray-900 min-h-screen">
-    <!-- Landing Page -->
-    <div id="landing-page" class="min-h-screen flex items-center justify-content-center p-4">
-        <div class="max-w-2xl mx-auto text-center">
-            <h1 class="text-6xl font-bold text-yellow-400 mb-4 drop-shadow-lg">♠ ♥ BLACKJACK ♦ ♣</h1>
-            <p class="text-gray-300 text-xl mb-8">Play with up to 7 friends online!</p>
-            
-            <div class="grid md:grid-cols-2 gap-6 mb-8">
-                <!-- Host Game -->
-                <div class="bg-gray-800 rounded-2xl p-6 border-2 border-yellow-500/30 hover:border-yellow-500 transition-all">
-                    <div class="text-5xl mb-4">🎰</div>
-                    <h2 class="text-2xl font-bold text-white mb-2">Host Game</h2>
-                    <p class="text-gray-400 mb-4">Create a room and become the dealer</p>
-                    <input type="text" id="host-name" placeholder="Your Name" 
-                        class="w-full px-4 py-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-yellow-500 focus:outline-none mb-4">
-                    <button onclick="hostGame()" class="w-full btn-game text-gray-900 font-bold py-3 px-6 rounded-lg">
-                        Create Room
-                    </button>
-                </div>
-                
-                <!-- Join Game -->
-                <div class="bg-gray-800 rounded-2xl p-6 border-2 border-green-500/30 hover:border-green-500 transition-all">
-                    <div class="text-5xl mb-4">🃏</div>
-                    <h2 class="text-2xl font-bold text-white mb-2">Join Game</h2>
-                    <p class="text-gray-400 mb-4">Enter a room code to join as a player</p>
-                    <input type="text" id="player-name" placeholder="Your Name" 
-                        class="w-full px-4 py-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-green-500 focus:outline-none mb-3">
-                    <input type="text" id="room-code" placeholder="Room Code" 
-                        class="w-full px-4 py-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-green-500 focus:outline-none mb-4 uppercase">
-                    <button onclick="joinGame()" class="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-bold py-3 px-6 rounded-lg transition-all hover:scale-105">
-                        Join Room
-                    </button>
-                </div>
+
+<!-- LANDING -->
+<div id="landing-page" class="min-h-screen flex items-center justify-center p-4">
+    <div class="text-center max-w-2xl">
+        <h1 class="text-6xl font-bold text-yellow-400 mb-4">♠ BLACKJACK ♣</h1>
+        <p class="text-gray-300 mb-8">Play with friends online (demo)</p>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="bg-gray-800 p-6 rounded-xl">
+                <input id="host-name" class="w-full p-3 mb-4 rounded bg-gray-700 text-white" placeholder="Your Name">
+                <button onclick="hostGame()" class="btn-game w-full p-3 rounded font-bold">Host Game</button>
             </div>
-            
-            <div class="bg-gray-800/50 rounded-xl p-6 text-left">
-                <h3 class="text-yellow-400 font-bold text-lg mb-3">📋 Quick Rules</h3>
-                <ul class="text-gray-300 space-y-2 text-sm">
-                    <li>• Get as close to 21 as possible without going over</li>
-                    <li>• Face cards (J, Q, K) are worth 10, Aces are 1 or 11</li>
-                    <li>• Beat the dealer's hand to win</li>
-                    <li>• Blackjack (Ace + 10-card) pays 3:2</li>
-                </ul>
+
+            <div class="bg-gray-800 p-6 rounded-xl">
+                <input id="player-name" class="w-full p-3 mb-3 rounded bg-gray-700 text-white" placeholder="Your Name">
+                <input id="room-code" class="w-full p-3 mb-4 rounded bg-gray-700 text-white" placeholder="Room Code">
+                <button onclick="joinGame()" class="w-full bg-green-600 p-3 rounded font-bold">Join Game</button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Lobby Page -->
-    <div id="lobby-page" class="min-h-screen p-4 hidden">
-        <div class="max-w-4xl mx-auto">
-            <div class="bg-gray-800 rounded-2xl p-6 mb-6">
-                <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
-                    <div>
-                        <h2 class="text-3xl font-bold text-white">Game Lobby</h2>
-                        <p class="text-gray-400">Waiting for players to join...</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="bg-gray-700 px-4 py-2 rounded-lg">
-                            <span class="text-gray-400 text-sm">Room Code:</span>
-                            <span id="display-room-code" class="text-yellow-400 font-bold text-xl ml-2"></span>
-                        </div>
-                        <button onclick="copyRoomCode()" class="copy-btn bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold py-2 px-4 rounded-lg transition-all">
-                            📋 Copy
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Players Grid -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <!-- Dealer Slot -->
-                    <div class="bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-2 border-yellow-500 rounded-xl p-4 text-center">
-                        <div class="text-3xl mb-2">👑</div>
-                        <div id="dealer-name" class="text-white font-bold">Dealer</div>
-                        <div class="text-yellow-400 text-sm">HOST</div>
-                    </div>
-                    
-                    <!-- Player Slots -->
-                    <div id="player-slots" class="contents">
-                        <!-- Generated by JS -->
-                    </div>
-                </div>
-                
-                <!-- Host Controls -->
-                <div id="host-controls" class="hidden">
-                    <div class="flex flex-wrap gap-4 justify-center">
-                        <button onclick="startGame()" id="start-game-btn" class="btn-game text-gray-900 font-bold py-3 px-8 rounded-lg text-lg disabled:opacity-50" disabled>
-                            🎮 Start Game
-                        </button>
-                        <div class="flex items-center gap-3 bg-gray-700 rounded-lg px-4 py-2">
-                            <label class="text-gray-300">Starting Chips:</label>
-                            <select id="starting-chips" class="bg-gray-600 text-white rounded px-3 py-1">
-                                <option value="500">$500</option>
-                                <option value="1000" selected>$1,000</option>
-                                <option value="2500">$2,500</option>
-                                <option value="5000">$5,000</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Player Waiting Message -->
-                <div id="player-waiting" class="text-center hidden">
-                    <div class="pulse-animation text-gray-400 text-lg">
-                        ⏳ Waiting for host to start the game...
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Chat Box -->
-            <div class="bg-gray-800 rounded-2xl p-4">
-                <h3 class="text-white font-bold mb-3">💬 Chat</h3>
-                <div id="chat-messages" class="h-40 overflow-y-auto bg-gray-900 rounded-lg p-3 mb-3 space-y-2">
-                    <div class="text-gray-500 text-sm">Welcome to the lobby!</div>
-                </div>
-                <div class="flex gap-2">
-                    <input type="text" id="chat-input" placeholder="Type a message..." 
-                        class="flex-1 px-4 py-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-yellow-500 focus:outline-none"
-                        onkeypress="if(event.key === 'Enter') sendChat()">
-                    <button onclick="sendChat()" class="bg-yellow-500 hover:bg-yellow-400 text-gray-900 font-bold py-2 px-4 rounded-lg">
-                        Send
-                    </button>
-                </div>
-            </div>
-        </div>
+<!-- LOBBY -->
+<div id="lobby-page" class="hidden p-4 text-white">
+    <h2 class="text-3xl mb-4">Lobby</h2>
+    <p>Room Code: <span id="display-room-code" class="text-yellow-400 font-bold"></span></p>
+    <button onclick="startGame()" class="btn-game mt-4 p-3 rounded font-bold">Start Game</button>
+</div>
+
+<!-- GAME -->
+<div id="game-page" class="hidden p-4">
+    <div class="table-felt rounded-3xl p-6 min-h-[500px] text-center text-white">
+        <h2 class="text-2xl mb-4">Game Started</h2>
+        <p class="text-gray-300">Demo mode – local simulation</p>
+        <button onclick="location.reload()" class="mt-6 bg-red-600 p-3 rounded font-bold">Exit</button>
     </div>
+</div>
+
+<script>
+let gameState = { roomCode:'', isHost:false };
+
+function generateRoomCode(){
+    return Math.random().toString(36).substring(2,7).toUpperCase();
+}
+
+function hostGame(){
+    const name=document.getElementById('host-name').value.trim();
+    if(!name) return alert("Enter name");
+    gameState.roomCode=generateRoomCode();
+    gameState.isHost=true;
+    showLobby();
+}
+
+function joinGame(){
+    const name=document.getElementById('player-name').value.trim();
+    const code=document.getElementById('room-code').value.trim();
+    if(!name||!code) return alert("Missing fields");
+    gameState.roomCode=code;
+    showLobby();
+}
+
+function showLobby(){
+    landing-page.classList.add('hidden');
+    lobby-page.classList.remove('hidden');
+    display-room-code.textContent=gameState.roomCode;
+}
+
+function startGame(){
+    lobby-page.classList.add('hidden');
+    game-page.classList.remove('hidden');
+}
+</script>
 
-    <!-- Game Page -->
-    <div id="game-page" class="min-h-screen p-2 md:p-4 hidden">
-        <div class="max-w-7xl mx-auto">
-            <!-- Top Bar -->
-            <div class="flex flex-wrap items-center justify-between gap-3 mb-4 bg-gray-800 rounded-xl p-3">
-                <div class="flex items-center gap-4">
-                    <span class="text-yellow-400 font-bold">Room: <span id="game-room-code"></span></span>
-                    <span id="round-number" class="text-gray-400">Round 1</span>
-                </div>
-                <div class="flex items-center gap-3">
-                    <button onclick="toggleChat()" class="bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg">💬</button>
-                    <button onclick="leaveGame()" class="bg-red-600 hover:bg-red-500 text-white py-2 px-4 rounded-lg">Leave</button>
-                </div>
-            </div>
-
-            <!-- Main Game Table -->
-            <div class="table-felt rounded-3xl p-4 md:p-8 relative min-h-[500px] md:min-h-[600px]">
-                <!-- Dealer Area -->
-                <div class="text-center mb-8">
-                    <div class="inline-block bg-black/30 rounded-2xl p-4">
-                        <div class="text-yellow-400 font-bold mb-2">👑 DEALER</div>
-                        <div id="dealer-cards" class="flex justify-center items-center min-h-[90px] gap-1">
-                            <!-- Dealer cards here -->
-                        </div>
-                        <div id="dealer-score" class="text-white font-bold mt-2 text-xl"></div>
-                    </div>
-                </div>
-
-                <!-- Game Status Message -->
-                <div id="game-status" class="text-center mb-6">
-                    <div class="inline-block bg-black/50 text-white px-6 py-3 rounded-full text-lg font-bold">
-                        Place your bets!
-                    </div>
-                </div>
-
-                <!-- Players Area -->
-                <div id="players-area" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-                    <!-- Player seats generated by JS -->
-                </div>
-            </div>
-
-            <!-- Player Controls (Only visible to active player) -->
-            <div id="player-controls" class="mt-4 bg-gray-800 rounded-xl p-4 hidden">
-                <div class="flex flex-wrap items-center justify-center gap-4">
-                    <!-- Betting Controls -->
-                    <div id="betting-controls" class="flex flex-wrap items-center gap-3">
-                        <span class="text-white">Bet:</span>
-                        <div class="flex gap-2">
-                            <button onclick="adjustBet(-25)" class="chip bg-red-600 text-white">-25</button>
-                            <button onclick="adjustBet(-5)" class="chip bg-blue-600 text-white">-5</button>
-                            <span id="current-bet" class="text-yellow-400 font-bold text-2xl min-w-[80px] text-center">$25</span>
-                            <button onclick="adjustBet(5)" class="chip bg-blue-600 text-white">+5</button>
-                            <button onclick="adjustBet(25)" class="chip bg-red-600 text-white">+25</button>
-                        </div>
-                        <button onclick="placeBet()" class="btn-game text-gray-900 font-bold py-2 px-6 rounded-lg">
-                            Place Bet
-                        </button>
-                    </div>
-
-                    <!-- Action Controls -->
-                    <div id="action-controls" class="hidden flex-wrap items-center gap-3">
-                        <button onclick="playerHit()" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 rounded-lg text-lg">
-                            HIT
-                        </button>
-                        <button onclick="playerStand()" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-8 rounded-lg text-lg">
-                            STAND
-                        </button>
-                        <button onclick="playerDouble()" id="double-btn" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-6 rounded-lg">
-                            DOUBLE
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Player Info -->
-                <div class="flex justify-center gap-8 mt-4 text-center">
-                    <div>
-                        <div class="text-gray-400 text-sm">Your Chips</div>
-                        <div id="your-chips" class="text-yellow-400 font-bold text-xl">$1000</div>
-                    </div>
-                    <div>
-                        <div class="text-gray-400 text-sm">Current Bet</div>
-                        <div id="your-bet" class="text-green-400 font-bold text-xl">$0</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Dealer Controls (Host Only) -->
-            <div id="dealer-controls" class="mt-4 bg-yellow-500/20 border-2 border-yellow-500 rounded-xl p-4 hidden">
-                <div class="text-center">
-                    <h3 class="text-yellow-400 font-bold mb-3">👑 Dealer Controls</h3>
-                    <div class="flex flex-wrap justify-center gap-3">
-                        <button onclick="dealCards()" id="deal-btn" class="btn-game text-gray-900 font-bold py-2 px-6 rounded-lg">
-                            🃏 Deal Cards
-                        </button>
-                        <button onclick="dealerPlay()" id="dealer-play-btn" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-6 rounded-lg hidden">
-                            Dealer's Turn
-                        </button>
-                        <button onclick="newRound()" id="new-round-btn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg hidden">
-                            New Round
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Floating Chat -->
-        <div id="floating-chat" class="fixed bottom-4 right-4 w-80 bg-gray-800 rounded-xl shadow-2xl hidden">
-            <div class="p-3 border-b border-gray-700 flex justify-between items-center">
-                <span class="text-white font-bold">💬 Chat</span>
-                <button onclick="toggleChat()" class="text-gray-400 hover:text-white">✕</button>
-            </div>
-            <div id="game-chat-messages" class="h-48 overflow-y-auto p-3 space-y-2">
-            </div>
-            <div class="p-3 border-t border-gray-700">
-                <div class="flex gap-2">
-                    <input type="text" id="game-chat-input" placeholder="Message..." 
-                        class="flex-1 px-3 py-2 rounded-lg bg-gray-700 text-white text-sm"
-                        onkeypress="if(event.key === 'Enter') sendGameChat()">
-                    <button onclick="sendGameChat()" class="bg-yellow-500 text-gray-900 font-bold py-2 px-3 rounded-lg">→</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Result Modal -->
-    <div id="result-modal" class="fixed inset-0 bg-black/70 modal-overlay items-center justify-center hidden z-50">
-        <div class="bg-gray-800 rounded-2xl p-8 max-w-md mx-4 text-center slide-in">
-            <div id="result-icon" class="text-6xl mb-4">🎉</div>
-            <h2 id="result-title" class="text-3xl font-bold text-white mb-2">Round Complete!</h2>
-            <div id="result-details" class="text-gray-300 mb-6">
-                <!-- Results here -->
-            </div>
-            <button onclick="closeResultModal()" class="btn-game text-gray-900 font-bold py-3 px-8 rounded-lg">
-                Continue
-            </button>
-        </div>
-    </div>
-
-    <script>
-        // ============ GAME STATE ============
-        let gameState = {
-            roomCode: '',
-            isHost: false,
-            playerId: '',
-            playerName: '',
-            players: [],
-            dealer: { name: '', cards: [], score: 0 },
-            currentPlayerIndex: -1,
-            phase: 'waiting', // waiting, betting, playing, dealer, results
-            round: 1,
-            deck: [],
-            startingChips: 1000
-        };
-
-        // For demo/local play simulation
-        let localPlayers = [];
-        let currentBet = 25;
-        let minBet = 5;
-        let maxBet = 500;
-
-        // ============ CARD UTILITIES ============
-        const suits = ['♠', '♥', '♦', '♣'];
-        const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-
-        function createDeck() {
-            let deck = [];
-            for (let suit of suits) {
-                for (let value of values) {
-                    deck.push({ suit, value });
-                }
-            }
-            // Use 6 decks like real casinos
-            let multiDeck = [...deck, ...deck, ...deck, ...deck, ...deck, ...deck];
-            return shuffleDeck(multiDeck);
-        }
-
-        function shuffleDeck(deck) {
-            for (let i = deck.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [deck[i], deck[j]] = [deck[j], deck[i]];
-            }
-            return deck;
-        }
-
-        function getCardValue(card) {
-            if (['J', 'Q', 'K'].includes(card.value)) return 10;
-            if (card.value === 'A') return 11;
-            return parseInt(card.value);
-        }
-
-        function calculateScore(cards) {
-            let score = 0;
-            let aces = 0;
-            
-            for (let card of cards) {
-                if (card.value === 'A') aces++;
-                score += getCardValue(card);
-            }
-            
-            while (score > 21 && aces > 0) {
-                score -= 10;
-                aces--;
-            }
-            
-            return score;
-        }
-
-        function renderCard(card, hidden = false) {
-            if (hidden) {
-                return `<div class="card card-back"></div>`;
-            }
-            const isRed = ['♥', '♦'].includes(card.suit);
-            return `
-                <div class="card ${isRed ? 'red' : 'black'} deal-animation">
-                    <div class="text-xs">${card.value}${card.suit}</div>
-                    <div class="text-2xl text-center">${card.suit}</div>
-                    <div class="text-xs text-right">${card.value}${card.suit}</div>
-                </div>
-            `;
-        }
-
-        // ============ ROOM MANAGEMENT ============
-        function generateRoomCode() {
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-            let code = '';
-            for (let i = 0; i < 5; i++) {
-                code += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return code;
-        }
-
-        function generatePlayerId() {
-            return 'player_' + Math.random().toString(36).substr(2, 9);
-        }
-
-        function hostGame() {
-            const name = document.getElementById('host-name').value.trim();
-            if (!name) {
-                alert('Please enter your name');
-                return;
-            }
-
-            gameState.roomCode = generateRoomCode();
-            gameState.isHost = true;
-            gameState.playerId = generatePlayerId();
-            gameState.playerName = name;
-            gameState.dealer.name = name;
-
-            showLobby();
-            addSystemMessage(`${name} created the room`);
-        }
-
-        function joinGame() {
-            const name = document.getElementById('player-name').value.trim();
-            const code = document.getElementById('room-code').value.trim().toUpperCase();
-            
-            if (!name) {
-                alert('Please enter your name');
-                return;
-            }
-            if (!code) {
-                alert('Please enter a room code');
-                return;
-            }
-
-            gameState.roomCode = code;
-            gameState.isHost = false;
-            gameState.playerId = generatePlayerId();
-            gameState.playerName = name;
-
-            // Add player to game
-            const newPlayer = {
-                id: gameState.playerId,
-                name: name,
-                chips: gameState.startingChips,
-                bet: 0,
-                cards: [],
-                score: 0,
-                status: 'waiting', // waiting, betting, playing, standing, bust, blackjack
-                isLocal: true
-            };
-            
-            gameState.players.push(newPlayer);
-            
-            showLobby();
-            addSystemMessage(`${name} joined the room`);
-        }
-
-        // ============ UI NAVIGATION ============
-        function showLobby() {
-            document.getElementById('landing-page').classList.add('hidden');
-            document.getElementById('lobby-page').classList.remove('hidden');
-            document.getElementById('game-page').classList.add('hidden');
-
-            document.getElementById('display-room-code').textContent = gameState.roomCode;
-            document.getElementById('dealer-name').textContent = gameState.dealer.name || 'Waiting...';
-
-            if (gameState.isHost) {
-                document.getElementById('host-controls').classList.remove('hidden');
-                document.getElementById('player-waiting').classList.add('hidden');
-                // Add host as dealer (not a playing player)
-            } else {
-                document.getElementById('host-controls').classList.add('hidden');
-                document.getElementById('player-waiting').classList.remove('hidden');
-            }
-
-            renderPlayerSlots();
-            simulateOtherPlayers(); // For demo purposes
-        }
-
-        function renderPlayerSlots() {
-            const container = document.getElementById('player-slots');
-            container.innerHTML = '';
-            
-            for (let i = 0; i < 7; i++) {
-                const player = gameState.players[i];
-                const slot = document.createElement('div');
-                
-                if (player) {
-                    slot.className = 'bg-gradient-to-br from-green-500/20 to-green-600/20 border-2 border-green-500 rounded-xl p-4 text-center';
-                    slot.innerHTML = `
-                        <div class="text-3xl mb-2">🎮</div>
-                        <div class="text-white font-bold truncate">${player.name}</div>
-                        <div class="text-green-400 text-sm">Ready</div>
-                    `;
-                } else {
-                    slot.className = 'bg-gray-700/50 border-2 border-dashed border-gray-600 rounded-xl p-4 text-center';
-                    slot.innerHTML = `
-                        <div class="text-3xl mb-2 opacity-30">👤</div>
-                        <div class="text-gray-500">Empty Seat</div>
-                        <div class="text-gray-600 text-sm">Seat ${i + 1}</div>
-                    `;
-                }
-                container.appendChild(slot);
-            }
-
-            // Update start button
-            const startBtn = document.getElementById('start-game-btn');
-            if (startBtn) {
-                startBtn.disabled = gameState.players.length === 0;
-            }
-        }
-
-        function simulateOtherPlayers() {
-            // For demo: Add some simulated players after a delay
-            if (gameState.isHost && gameState.players.length === 0) {
-                setTimeout(() => {
-                    const demoNames = ['Alice', 'Bob', 'Charlie'];
-                    const numPlayers = Math.floor(Math.random() * 3) + 1;
-                    
-                    for (let i = 0; i < numPlayers; i++) {
-                        gameState.players.push({
-                            id: generatePlayerId(),
-                            name: demoNames[i],
-                            chips: gameState.startingChips,
-                            bet: 0,
-                            cards: [],
-                            score: 0,
-                            status: 'waiting',
-                            isLocal: false
-                        });
-                        addSystemMessage(`${demoNames[i]} joined the room`);
-                    }
-                    renderPlayerSlots();
-                }, 2000);
-            }
-        }
-
-        function copyRoomCode() {
-            navigator.clipboard.writeText(gameState.roomCode);
-            alert('Room code copied to clipboard!');
-        }
-
-        // ============ CHAT ============
-        function addSystemMessage(text) {
-            addChatMessage('System', text, true);
-        }
-
-        function addChatMessage(sender, text, isSystem = false) {
-            const container = document.getElementById('chat-messages');
-            const gameContainer = document.getElementById('game-chat-messages');
-            
-            const msg = document.createElement('div');
-            msg.className = isSystem ? 'text-gray-500 text-sm italic' : 'text-sm';
-            msg.innerHTML = isSystem ? text : `<span class="text-yellow-400 font-bold">${sender}:</span> <span class="text-white">${text}</span>`;
-            
-            if (container) {
-                container.appendChild(msg.cloneNode(true));
-                container.scrollTop = container.scrollHeight;
-            }
-            if (gameContainer) {
-                gameContainer.appendChild(msg);
-                gameContainer.scrollTop = gameContainer.scrollHeight;
-            }
-        }
-
-        function sendChat() {
-            const input = document.getElementById('chat-input');
-            const text = input.value.trim();
-            if (text) {
-                addChatMessage(gameState.playerName, text);
-                input.value = '';
-            }
-        }
-
-        function sendGameChat() {
-            const input = document.getElementById('game-chat-input');
-            const text = input.value.trim();
-            if (text) {
-                addChatMessage(gameState.playerName, text);
-                input.value = '';
-            }
-        }
-
-        function toggleChat() {
-            const chat = document.getElementById('floating-chat');
-            chat.classList.toggle('hidden');
-        }
-
-        // ============ GAME START ============
-        function startGame() {
-            gameState.startingChips = parseInt(document.getElementById('starting-chips').value);
-            
-            // Set chips for all players
-            gameState.players.forEach(p => {
-                p.chips = gameState.startingChips;
-            });
-
-            gameState.deck = createDeck();
-            gameState.phase = 'betting';
-            gameState.round = 1;
-
-            showGamePage();
-            addSystemMessage('Game started! Place your bets.');
-        }
-
-        function showGamePage() {
-            document.getElementById('landing-page').classList.add('hidden');
-            document.getElementById('lobby-page').classList.add('hidden');
-            document.getElementById('game-page').classList.remove('hidden');
-
-            document.getElementById('game-room-code').textContent = gameState.roomCode;
-
-            if (gameState.isHost) {
-                document.getElementById('dealer-controls').classList.remove('hidden');
-                document.getElementById('player-controls').classList.add('hidden');
-            } else {
-                document.getElementById('dealer-controls').classList.add('hidden');
-                document.getElementById('player-controls').classList.remove('hidden');
-            }
-
-            renderGameTable();
-            updateGameUI();
-        }
-
-        function renderGameTable() {
-            const container = document.getElementById('players-area');
-            container.innerHTML = '';
-
-            gameState.players.forEach((player, index) => {
-                const seat = document.createElement('div');
-                seat.id = `seat-${index}`;
-                seat.className = `player-seat bg-black/40 rounded-xl p-3 text-center ${player.status === 'bust' ? 'bust' : ''} ${gameState.currentPlayerIndex === index ? 'active' : ''}`;
-                
-                seat.innerHTML = `
-                    <div class="text-white font-bold text-sm truncate mb-1">${player.name}</div>
-                    <div class="flex justify-center items-center min-h-[70px] gap-0 mb-2" id="cards-${index}">
-                        ${player.cards.map(c => renderCard(c)).join('')}
-                    </div>
-                    <div class="text-yellow-400 font-bold" id="score-${index}">${player.score > 0 ? player.score : ''}</div>
-                    <div class="flex justify-between text-xs mt-2">
-                        <span class="text-green-400">$${player.chips}</span>
-                        <span class="text-yellow-400">${player.bet > 0 ? 'Bet: $' + player.bet : ''}</span>
-                    </div>
-                    <div class="text-xs mt-1 ${getStatusColor(player.status)}" id="status-${index}">${getStatusText(player.status)}</div>
-                `;
-                container.appendChild(seat);
-            });
-        }
-
-        function getStatusColor(status) {
-            const colors = {
-                waiting: 'text-gray-400',
-                betting: 'text-blue-400',
-                playing: 'text-green-400',
-                standing: 'text-yellow-400',
-                bust: 'text-red-400',
-                blackjack: 'text-purple-400',
-                win: 'text-green-400',
-                lose: 'text-red-400',
-                push: 'text-yellow-400'
-            };
-            return colors[status] || 'text-gray-400';
-        }
-
-        function getStatusText(status) {
-            const texts = {
-                waiting: 'Waiting',
-                betting: 'Betting...',
-                playing: 'Playing',
-                standing: 'Standing',
-                bust: 'BUST!',
-                blackjack: 'BLACKJACK!',
-                win: 'WIN!',
-                lose: 'LOSE',
-                push: 'PUSH'
-            };
-            return texts[status] || status;
-        }
-
-        function updateGameUI() {
-            // Update dealer cards
-            const dealerCards = document.getElementById('dealer-cards');
-            if (gameState.dealer.cards.length > 0) {
-                const showAll = gameState.phase === 'dealer' || gameState.phase === 'results';
-                dealerCards.innerHTML = gameState.dealer.cards.map((c, i) => 
-                    renderCard(c, !showAll && i === 1)
-                ).join('');
-                
-                if (showAll) {
-                    document.getElementById('dealer-score').textContent = gameState.dealer.score;
-                } else {
-                    const visibleScore = getCardValue(gameState.dealer.cards[0]);
-                    document.getElementById('dealer-score').textContent = visibleScore + ' + ?';
-                }
-            } else {
-                dealerCards.innerHTML = '<div class="text-gray-400">Cards will appear here</div>';
-                document.getElementById('dealer-score').textContent = '';
-            }
-
-            // Update game status
-            const statusEl = document.getElementById('game-status');
-            const statusTexts = {
-                betting: '💰 Place your bets!',
-                dealing: '🃏 Dealing cards...',
-                playing: `🎮 ${gameState.players[gameState.currentPlayerIndex]?.name || 'Player'}'s turn`,
-                dealer: "👑 Dealer's turn",
-                results: '🏆 Round Complete!'
-            };
-            statusEl.querySelector('div').textContent = statusTexts[gameState.phase] || 'Waiting...';
-
-            // Update round number
-            document.getElementById('round-number').textContent = `Round ${gameState.round}`;
-
-            // Update controls visibility
-            if (gameState.isHost) {
-                document.getElementById('deal-btn').classList.toggle('hidden', gameState.phase !== 'betting');
-                document.getElementById('dealer-play-btn').classList.toggle('hidden', gameState.phase !== 'dealer');
-                document.getElementById('new-round-btn').classList.toggle('hidden', gameState.phase !== 'results');
-            } else {
-                // Player controls
-                const myPlayer = gameState.players.find(p => p.id === gameState.playerId);
-                if (myPlayer) {
-                    document.getElementById('your-chips').textContent = '$' + myPlayer.chips;
-                    document.getElementById('your-bet').textContent = '$' + myPlayer.bet;
-                    
-                    const isMyTurn = gameState.players[gameState.currentPlayerIndex]?.id === gameState.playerId;
-                    
-                    document.getElementById('betting-controls').classList.toggle('hidden', gameState.phase !== 'betting' || myPlayer.status !== 'waiting');
-                    document.getElementById('action-controls').classList.toggle('hidden', !isMyTurn || gameState.phase !== 'playing');
-                    
-                    // Double button only available on first action
-                    document.getElementById('double-btn').disabled = myPlayer.cards.length !== 2 || myPlayer.chips < myPlayer.bet;
-                }
-            }
-
-            renderGameTable();
-        }
-
-        // ============ BETTING ============
-        function adjustBet(amount) {
-            currentBet = Math.max(minBet, Math.min(maxBet, currentBet + amount));
-            document.getElementById('current-bet').textContent = '$' + currentBet;
-        }
-
-        function placeBet() {
-            const myPlayer = gameState.players.find(p => p.id === gameState.playerId);
-            if (!myPlayer) return;
-
-            if (currentBet > myPlayer.chips) {
-                alert("You don't have enough chips!");
-                return;
-            }
-
-            myPlayer.bet = currentBet;
-            myPlayer.chips -= currentBet;
-            myPlayer.status = 'betting';
-            
-            addSystemMessage(`${myPlayer.name} bet $${currentBet}`);
-            updateGameUI();
-        }
-
-        // ============ DEALING ============
-        function dealCards() {
-            if (gameState.phase !== 'betting') return;
-            
-            // Auto-bet for demo players
-            gameState.players.forEach(p => {
-                if (!p.isLocal && p.status === 'waiting') {
-                    p.bet = Math.floor(Math.random() * 5) * 25 + 25;
-                    p.chips -= p.bet;
-                    p.status = 'betting';
-                }
-            });
-
-            // Check if all players have bet
-            const allBet = gameState.players.every(p => p.bet > 0);
-            if (!allBet) {
-                alert('Waiting for all players to place bets');
-                return;
-            }
-
-            gameState.phase = 'dealing';
-
-            // Deal two cards to each player
-            gameState.players.forEach(player => {
-                player.cards = [drawCard(), drawCard()];
-                player.score = calculateScore(player.cards);
-                player.status = 'playing';
-                
-                // Check for blackjack
-                if (player.score === 21) {
-                    player.status = 'blackjack';
-                }
-            });
-
-            // Deal two cards to dealer
-            gameState.dealer.cards = [drawCard(), drawCard()];
-            gameState.dealer.score = calculateScore(gameState.dealer.cards);
-
-            // Start playing phase
-            gameState.phase = 'playing';
-            gameState.currentPlayerIndex = 0;
-            
-            // Skip players with blackjack
-            skipBlackjackPlayers();
-
-            updateGameUI();
-        }
-
-        function drawCard() {
-            if (gameState.deck.length < 20) {
-                gameState.deck = createDeck();
-            }
-            return gameState.deck.pop();
-        }
-
-        function skipBlackjackPlayers() {
-            while (gameState.currentPlayerIndex < gameState.players.length && 
-                   (gameState.players[gameState.currentPlayerIndex].status === 'blackjack' ||
-                    gameState.players[gameState.currentPlayerIndex].status === 'bust')) {
-                gameState.currentPlayerIndex++;
-            }
-            
-            if (gameState.currentPlayerIndex >= gameState.players.length) {
-                gameState.phase = 'dealer';
-            }
-        }
-
-        // ============ PLAYER ACTIONS ============
-        function playerHit() {
-            const player = gameState.players[gameState.currentPlayerIndex];
-            if (!player || gameState.phase !== 'playing') return;
-
-            player.cards.push(drawCard());
-            player.score = calculateScore(player.cards);
-
-            if (player.score > 21) {
-                player.status = 'bust';
-                addSystemMessage(`${player.name} busted with ${player.score}!`);
-                nextPlayer();
-            } else if (player.score === 21) {
-                player.status = 'standing';
-                addSystemMessage(`${player.name} has 21!`);
-                nextPlayer();
-            }
-
-            updateGameUI();
-        }
-
-        function playerStand() {
-            const player = gameState.players[gameState.currentPlayerIndex];
-            if (!player || gameState.phase !== 'playing') return;
-
-            player.status = 'standing';
-            addSystemMessage(`${player.name} stands with ${player.score}`);
-            nextPlayer();
-        }
-
-        function playerDouble() {
-            const player = gameState.players[gameState.currentPlayerIndex];
-            if (!player || gameState.phase !== 'playing') return;
-            if (player.cards.length !== 2 || player.chips < player.bet) return;
-
-            player.chips -= player.bet;
-            player.bet *= 2;
-            player.cards.push(drawCard());
-            player.score = calculateScore(player.cards);
-
-            if (player.score > 21) {
-                player.status = 'bust';
-                addSystemMessage(`${player.name} doubled and busted!`);
-            } else {
-                player.status = 'standing';
-                addSystemMessage(`${player.name} doubled down!`);
-            }
-
-            nextPlayer();
-        }
-
-        function nextPlayer() {
-            gameState.currentPlayerIndex++;
-            skipBlackjackPlayers();
-            
-            // Simulate AI players
-            while (gameState.currentPlayerIndex < gameState.players.length && 
-                   !gameState.players[gameState.currentPlayerIndex].isLocal &&
-                   gameState.phase === 'playing') {
-                simulateAIPlayer();
-            }
-
-            updateGameUI();
-        }
-
-        function simulateAIPlayer() {
-            const player = gameState.players[gameState.currentPlayerIndex];
-            if (!player || player.isLocal) return;
-
-            // Simple AI: hit until 17 or higher
-            setTimeout(() => {
-                while (player.score < 17 && player.status === 'playing') {
-                    player.cards.push(drawCard());
-                    player.score = calculateScore(player.cards);
-                    
-                    if (player.score > 21) {
-                        player.status = 'bust';
-                        addSystemMessage(`${player.name} busted!`);
-                    }
-                }
-                
-                if (player.status === 'playing') {
-                    player.status = 'standing';
-                    addSystemMessage(`${player.name} stands with ${player.score}`);
-                }
-
-                gameState.currentPlayerIndex++;
-                skipBlackjackPlayers();
-                updateGameUI();
-            }, 1000);
-        }
-
-        // ============ DEALER PLAY ============
-        function dealerPlay() {
-            if (gameState.phase !== 'dealer') return;
-
-            // Dealer hits until 17 or higher
-            while (gameState.dealer.score < 17) {
-                gameState.dealer.cards.push(drawCard());
-                gameState.dealer.score = calculateScore(gameState.dealer.cards);
-            }
-
-            updateGameUI();
-
-            // Calculate results
-            setTimeout(() => {
-                calculateResults();
-            }, 1500);
-        }
-
-        function calculateResults() {
-            gameState.phase = 'results';
-            const dealerScore = gameState.dealer.score;
-            const dealerBust = dealerScore > 21;
-
-            let resultsHtml = '<div class="space-y-2">';
-
-            gameState.players.forEach(player => {
-                let result = '';
-                let winnings = 0;
-
-                if (player.status === 'bust') {
-                    result = 'lose';
-                    player.status = 'lose';
-                } else if (player.status === 'blackjack') {
-                    if (gameState.dealer.score === 21 && gameState.dealer.cards.length === 2) {
-                        result = 'push';
-                        winnings = player.bet;
-                    } else {
-                        result = 'blackjack';
-                        winnings = player.bet + Math.floor(player.bet * 1.5);
-                    }
-                    player.status = result === 'push' ? 'push' : 'win';
-                } else if (dealerBust) {
-                    result = 'win';
-                    winnings = player.bet * 2;
-                    player.status = 'win';
-                } else if (player.score > dealerScore) {
-                    result = 'win';
-                    winnings = player.bet * 2;
-                    player.status = 'win';
-                } else if (player.score === dealerScore) {
-                    result = 'push';
-                    winnings = player.bet;
-                    player.status = 'push';
-                } else {
-                    result = 'lose';
-                    player.status = 'lose';
-                }
-
-                player.chips += winnings;
-
-                const resultClass = result === 'win' || result === 'blackjack' ? 'text-green-400' : 
-                                   result === 'lose' ? 'text-red-400' : 'text-yellow-400';
-                                   
-                resultsHtml += `
-                    <div class="flex justify-between">
-                        <span class="text-white">${player.name}</span>
-                        <span class="${resultClass} font-bold">${result.toUpperCase()} ${winnings > 0 ? '+$' + winnings : ''}</span>
-                    </div>
-                `;
-            });
-
-            resultsHtml += '</div>';
-
-            // Show result modal
-            document.getElementById('result-details').innerHTML = resultsHtml;
-            document.getElementById('result-modal').classList.remove('hidden');
-            document.getElementById('result-modal').classList.add('flex');
-
-            updateGameUI();
-        }
-
-        function closeResultModal() {
-            document.getElementById('result-modal').classList.add('hidden');
-            document.getElementById('result-modal').classList.remove('flex');
-        }
-
-        function newRound() {
-            gameState.round++;
-            gameState.phase = 'betting';
-            gameState.currentPlayerIndex = -1;
-            gameState.dealer.cards = [];
-            gameState.dealer.score = 0;
-
-            // Remove broke players
-            gameState.players = gameState.players.filter(p => p.chips >= minBet);
-
-            // Reset player states
-            gameState.players.forEach(player => {
-                player.cards = [];
-                player.score = 0;
-                player.bet = 0;
-                player.status = 'waiting';
-            });
-
-            if (gameState.players.length === 0) {
-                alert('No players remaining! Game over.');
-                location.reload();
-                return;
-            }
-
-            addSystemMessage(`Round ${gameState.round} - Place your bets!`);
-            updateGameUI();
-        }
-
-        function leaveGame() {
-            if (confirm('Are you sure you want to leave the game?')) {
-                location.reload();
-            }
-        }
-
-        // ============ INITIALIZATION ============
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('Blackjack loaded! Ready for multiplayer gaming.');
-        });
-
-        // ============ NOTE FOR REAL MULTIPLAYER ============
-        /*
-         * TO MAKE THIS A TRUE ONLINE MULTIPLAYER GAME:
-         * 
-         * 1. Set up a WebSocket server (Node.js + Socket.io recommended)
-         * 2. Replace local state management with server communication
-         * 3. Add these server endpoints:
-         *    - createRoom() - generates room, returns code
-         *    - joinRoom(code, playerInfo) - joins existing room
-         *    - placeBet(amount) - submits bet to server
-         *    - playerAction(action) - hit, stand, double
-         *    - startRound() - dealer initiates round
-         *    - sync() - get current game state
-         * 
-         * 4. Add WebSocket event listeners for:
-         *    - playerJoined, playerLeft
-         *    - gameStateUpdate
-         *    - chatMessage
-         *    - roundStart, roundEnd
-         * 
-         * Example Socket.io integration:
-         * 
-         * const socket = io('your-server-url');
-         * 
-         * socket.emit('createRoom', { playerName });
-         * socket.on('roomCreated', (roomCode) => {...});
-         * 
-         * socket.emit('joinRoom', { roomCode, playerName });
-         * socket.on('playerJoined', (players) => {...});
-         * 
-         * socket.on('gameState', (state) => {
-         *     gameState = state;
-         *     updateGameUI();
-         * });
-         */
-    </script>
 </body>
 </html>
