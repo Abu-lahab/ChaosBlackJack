@@ -678,8 +678,38 @@
         }
 
         // ============ GAME START ============
-        function startGame() {
-            gameState.startingChips = parseInt(document.getElementById('starting-chips').value);
+function startGame() {
+    // FORCE single-player mode (GitHub Pages compatible)
+    gameState.isHost = false;
+
+    gameState.players = [{
+        id: 'local',
+        name: gameState.playerName || 'You',
+        chips: 1000,
+        bet: 0,
+        cards: [],
+        score: 0,
+        status: 'waiting',
+        isLocal: true
+    }];
+
+    gameState.dealer = {
+        name: 'Dealer',
+        cards: [],
+        score: 0
+    };
+
+    gameState.startingChips = 1000;
+    gameState.deck = createDeck();
+    gameState.phase = 'betting';
+    gameState.round = 1;
+    gameState.currentPlayerIndex = 0;
+
+    // Move to game UI
+    showGamePage();
+    updateGameUI();
+}
+
             
             // Set chips for all players
             gameState.players.forEach(p => {
@@ -703,7 +733,7 @@
 
             if (gameState.isHost) {
                 document.getElementById('dealer-controls').classList.remove('hidden');
-                document.getElementById('player-controls').classList.add('hidden');
+                document.getElementById('player-controls').classList.remove('hidden');
             } else {
                 document.getElementById('dealer-controls').classList.add('hidden');
                 document.getElementById('player-controls').classList.remove('hidden');
